@@ -53,10 +53,29 @@ function! test#go#gotest#executable() abort
   return 'go test'
 endfunction
 
+
 function! s:nearest_test(position) abort
+  " Check if the buffer has imported testify
+  let testifyImported = len(filter(getbufline('%', 1, '$'), 'v:val =~# "\\v^import \\"github.com/stretchr/testify\\"$"')) > 0
+
+    " Previous behavior or any other fallback
   let name = test#base#nearest_test(a:position, g:test#go#patterns)
   let name = join(name['namespace'] + name['test'], '/')
-  let without_spaces = substitute(name, '\s', '_', 'g')
-  let escaped_regex = substitute(without_spaces, '\([\[\].*+?|$^()]\)', '\\\1', 'g')
-  return escaped_regex
+
+  if !testifyImported
+    let without_spaces = substitute(name, '\s', '_', 'g')
+    let escaped_regex = substitute(without_spaces, '\([\[\].*+?|$^()]\)', '\\\1', 'g')
+    return escaped_regex
+  else
+    " Look for setup function with testing.T argument
+    for line in getbufline('%', 1, '$')
+      if line =~# '\\vfunc (\w+)\\(t \*testing.T\\) {'
+        let setupFunctionName = matchstr(line, '\\vfunc (\w+)\\(t \*testing.T\\) {')
+        return '-timeout 30s -tags integration -run ^' . setupFunctionName . '$ -testify.m ^' . name . '$'
+      endif
+    endfor
+  endif
+
+  return ''
 endfunction
+
