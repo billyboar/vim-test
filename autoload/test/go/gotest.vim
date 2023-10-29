@@ -78,7 +78,6 @@ function! s:nearest_test(position, path) abort
         return ['-timeout 30s', '-run ^'.setupFunctionName.'$', '-testify.m ^'.name.'$', path]
       endif
     endfor
-  endif
 
   return ''
 endfunction
