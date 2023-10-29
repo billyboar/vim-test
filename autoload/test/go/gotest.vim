@@ -15,8 +15,8 @@ function! test#go#gotest#build_position(type, position) abort
     if a:type ==# 'file'
       return path ==# './.' ? [] : [path . '/...']
     elseif a:type ==# 'nearest'
-      let name = s:nearest_test(a:position)
-      return empty(name) ? [] : ['-run '.shellescape(name.'$', 1), path]
+      let name = s:nearest_test(a:position, path)
+      return empty(name) ? [] : name
     endif
   endif
 endfunction
@@ -54,7 +54,7 @@ function! test#go#gotest#executable() abort
 endfunction
 
 
-function! s:nearest_test(position) abort
+function! s:nearest_test(position, path) abort
   " Check if the buffer has imported testify
   " let testifyImported = len(filter(getbufline('%', 1, '$'), 'v:val =~# "\v^\\"github.com/stretchr/testify\\"$"')) > 0
   let testifyImported = len(filter(getbufline('%', 1, '$'), 'v:val =~# ''\v^"github.com/stretchr/testify"$''')) > 0
@@ -64,16 +64,18 @@ function! s:nearest_test(position) abort
   let name = test#base#nearest_test(a:position, g:test#go#patterns)
   let name = join(name['namespace'] + name['test'], '/')
 
-  if !testifyImported
-    let without_spaces = substitute(name, '\s', '_', 'g')
-    let escaped_regex = substitute(without_spaces, '\([\[\].*+?|$^()]\)', '\\\1', 'g')
-    return escaped_regex
-  else
+  " if !testifyImported
+  "   let without_spaces = substitute(name, '\s', '_', 'g')
+  "   let escaped_regex = substitute(without_spaces, '\([\[\].*+?|$^()]\)', '\\\1', 'g')
+  "   " return escaped_regex
+  "   return ['-run '.shellescape(escaped_regex.'$', 1), path]
+  " else
     " Look for setup function with testing.T argument
     for line in getbufline('%', 1, '$')
       if line =~# '\\vfunc (\w+)\\(t \*testing.T\\) {'
         let setupFunctionName = matchstr(line, '\\vfunc (\w+)\\(t \*testing.T\\) {')
-        return '-timeout 30s -tags integration -run ^' . setupFunctionName . '$ -testify.m ^' . name . '$'
+        " return '-timeout 30s -tags integration -run ^' . setupFunctionName . '$ -testify.m ^' . name . '$'
+        return ['-timeout 30s', '-run ^'.setupFunctionName.'$', '-testify.m ^'.name.'$', path]
       endif
     endfor
   endif
