@@ -58,6 +58,7 @@ function! s:nearest_test(position) abort
   " Check if the buffer has imported testify
   " let testifyImported = len(filter(getbufline('%', 1, '$'), 'v:val =~# "\v^\\"github.com/stretchr/testify\\"$"')) > 0
   let testifyImported = len(filter(getbufline('%', 1, '$'), 'v:val =~# ''\v^"github.com/stretchr/testify"$''')) > 0
+  echo testifyImported
 
     " Previous behavior or any other fallback
   let name = test#base#nearest_test(a:position, g:test#go#patterns)
